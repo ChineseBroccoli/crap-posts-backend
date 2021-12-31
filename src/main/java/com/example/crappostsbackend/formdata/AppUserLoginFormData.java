@@ -5,10 +5,8 @@ import java.io.Serializable;
 
 public class AppUserLoginFormData implements Serializable {
 
-    @NotEmpty(message = "Username cannot be empty!")
     private String username;
 
-    @NotEmpty(message = "Password cannot be empty!")
     private String password;
 
     public String getUsername() {

@@ -1,29 +1,32 @@
 package com.example.crappostsbackend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "posts")
-public class Post {
+public class Post{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(name = "title")
+    private String title;
 
     @Column(name = "text")
     private String text;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private List<AppUser> upvotedUsers;
+    private Set<AppUser> upvotedUsers = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private List<AppUser> downvotedUsers;
+    private Set<AppUser> downvotedUsers = new HashSet<>();
 
     @Column(name = "createdAt")
     private Date createdAt = new Date();
@@ -31,8 +34,17 @@ public class Post {
     @Column(name = "updatedAt")
     private Date updatedAt = new Date();
 
+    @JsonIgnoreProperties({"createdAt"})
+    @ManyToOne
+    private AppUser creator;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "isDisabled")
     private boolean isDisabled = false;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Transient
+    private long votes;
 
     public long getId() {
         return id;
@@ -50,8 +62,12 @@ public class Post {
         this.text = text;
     }
 
+    public void setVotes(long votes) {
+        this.votes = votes;
+    }
+
     public long getVotes() {
-        return upvotedUsers.size() - downvotedUsers.size();
+        return this.upvotedUsers.size() - this.downvotedUsers.size();
     }
 
     public Date getCreatedAt() {
@@ -78,7 +94,7 @@ public class Post {
         this.isDisabled = disabled;
     }
 
-    public List<AppUser> getUpvotedUsers() {
+    public Set<AppUser> getUpvotedUsers() {
         return upvotedUsers;
     }
 
@@ -90,7 +106,7 @@ public class Post {
         upvotedUsers.remove(appUser);
     }
 
-    public List<AppUser> getDownvotedUsers() {
+    public Set<AppUser> getDownvotedUsers() {
         return downvotedUsers;
     }
 
@@ -102,4 +118,19 @@ public class Post {
         downvotedUsers.remove(appUser);
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public AppUser getCreator() {
+        return creator;
+    }
+
+    public void setCreator(AppUser creator) {
+        this.creator = creator;
+    }
 }

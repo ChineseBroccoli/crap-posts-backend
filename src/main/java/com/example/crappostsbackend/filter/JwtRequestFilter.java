@@ -1,14 +1,11 @@
 package com.example.crappostsbackend.filter;
 
-import com.example.crappostsbackend.model.AppUser;
 import com.example.crappostsbackend.service.AppUserService;
-import com.example.crappostsbackend.util.JwtUtil;
+import com.example.crappostsbackend.util.JsonWebTokenUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,12 +20,12 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
 
    private final AppUserService appUserService;
-    private final JwtUtil jwtUtil;
+    private final JsonWebTokenUtility jsonWebTokenUtility;
 
     @Autowired
-    public JwtRequestFilter(AppUserService appUserService, JwtUtil jwtUtil) {
+    public JwtRequestFilter(AppUserService appUserService, JsonWebTokenUtility jsonWebTokenUtility) {
         this.appUserService = appUserService;
-        this.jwtUtil = jwtUtil;
+        this.jsonWebTokenUtility = jsonWebTokenUtility;
     }
 
     @Override
@@ -41,12 +38,12 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String prefix = "Bearer ";
         if (authorizationHeader != null && authorizationHeader.startsWith(prefix)) {
             jwt = authorizationHeader.substring(prefix.length());
-            username = jwtUtil.extractUsername(jwt);
+            username = jsonWebTokenUtility.extractUsername(jwt);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = appUserService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(jwt, userDetails)) {
+            if (jsonWebTokenUtility.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
-public class JwtUtil {
+public class JsonWebTokenUtility {
 
     @Value("${jwt.secret}")
     private String SECRET_KEY;
@@ -68,6 +68,5 @@ public class JwtUtil {
     {
         final String username = extractUsername(token);
         return(username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-
     }
 }

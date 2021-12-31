@@ -1,16 +1,16 @@
 package com.example.crappostsbackend.exception;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Map;
 
 public class ErrorDetails {
     private Date timeStamp;
-    private List<String> messages;
+    private Map<String, String> errorMessages;
     private String details;
 
-    public ErrorDetails(Date timeStamp, List<String> messages, String details) {
+    public ErrorDetails(Date timeStamp, Map<String, String> errorMessages, String details) {
         this.timeStamp = timeStamp;
-        this.messages = messages;
+        this.errorMessages = errorMessages;
         this.details = details;
     }
 
@@ -22,12 +22,12 @@ public class ErrorDetails {
         this.timeStamp = timeStamp;
     }
 
-    public List<String> getMessages() {
-        return messages;
+    public Map<String, String> getErrorMessages() {
+        return errorMessages;
     }
 
-    public void setMessages(List<String> messages) {
-        this.messages = messages;
+    public void setErrorMessages(Map<String, String> errorMessages) {
+        this.errorMessages = errorMessages;
     }
 
     public String getDetails() {

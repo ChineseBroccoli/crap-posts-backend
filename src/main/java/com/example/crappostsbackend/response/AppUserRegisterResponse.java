@@ -5,25 +5,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-public class AppUserLoginResponse {
-    @JsonProperty("jsonWebToken")
-    private String jsonWebToken;
+public class AppUserRegisterResponse {
     @JsonProperty("user")
     private AppUser appUser;
     @JsonProperty("errorMessages")
     private Map<String, String> errorMessages;
 
-    public AppUserLoginResponse(String jsonWebToken, AppUser appUser, Map<String, String> errorMessages) {
-        this.jsonWebToken = jsonWebToken;
+    public AppUserRegisterResponse(AppUser appUser, Map<String, String> errorMessages) {
         this.appUser = appUser;
         this.errorMessages = errorMessages;
     }
 
-    public String getJsonWebToken() {
-        return jsonWebToken;
-    }
-
     public AppUser getAppUser() {
         return appUser;
+    }
+
+    public void setAppUser(AppUser appUser) {
+        this.appUser = appUser;
+    }
+
+    public Map<String, String> getErrorMessages() {
+        return errorMessages;
+    }
+
+    public void setErrorMessages(Map<String, String> errorMessages) {
+        this.errorMessages = errorMessages;
     }
 }

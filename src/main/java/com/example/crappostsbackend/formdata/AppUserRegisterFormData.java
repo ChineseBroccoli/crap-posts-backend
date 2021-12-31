@@ -5,11 +5,11 @@ import java.io.Serializable;
 
 public class AppUserRegisterFormData implements Serializable {
 
-    @NotEmpty(message = "Username cannot be empty!")
     private String username;
 
-    @NotEmpty(message = "Password cannot be empty!")
     private String password;
+
+    private String passwordConfirm;
 
     public String getUsername() {
         return username;
@@ -25,5 +25,13 @@ public class AppUserRegisterFormData implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPasswordConfirm() {
+        return passwordConfirm;
+    }
+
+    public void setPasswordConfirm(String passwordConfirm) {
+        this.passwordConfirm = passwordConfirm;
     }
 }

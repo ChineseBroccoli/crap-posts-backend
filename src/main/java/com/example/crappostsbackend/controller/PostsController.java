@@ -1,22 +1,29 @@
 package com.example.crappostsbackend.controller;
 
+import com.example.crappostsbackend.enums.VoteStatus;
 import com.example.crappostsbackend.exception.BadRequestException;
 import com.example.crappostsbackend.exception.ResourceNotFoundException;
 import com.example.crappostsbackend.formdata.PostFormData;
 import com.example.crappostsbackend.model.AppUser;
 import com.example.crappostsbackend.model.Post;
+import com.example.crappostsbackend.response.PostResponse;
 import com.example.crappostsbackend.service.AppUserService;
-import org.apache.coyote.Response;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.example.crappostsbackend.service.PostsService;
 
 import javax.validation.Valid;
 
+@Slf4j
+@CrossOrigin
 @RestController
 @RequestMapping(path="/api/v1")
 public class PostsController {
@@ -32,9 +39,22 @@ public class PostsController {
 
     //get all posts
     @GetMapping("/posts")
-    public ResponseEntity<List<Post>> getAllPosts() {
+    public ResponseEntity<List<PostResponse>> getAllPosts() {
         List<Post> posts = postsService.findAllActivePosts();
-        return ResponseEntity.ok().body(posts);
+        for (Post post: posts) {
+            log.info(post.toString());
+        }
+        postsService.sortPostByDate(posts);
+        try
+        {
+            AppUser authenticatedAppUser = appUserService.getAuthenticatedAppUser();
+            List<PostResponse> postsResponse = postsService.getPostResponseLoggedIn(posts, authenticatedAppUser);
+            return ResponseEntity.ok().body(postsResponse);
+        }
+        catch(Exception exception){
+            List<PostResponse> postsResponse = postsService.getPostResponsesNotLoggedIn(posts);
+            return ResponseEntity.ok().body(postsResponse);
+        }
     }
     //get post by id
     @GetMapping("/posts/{id}")
@@ -43,60 +63,77 @@ public class PostsController {
         return ResponseEntity.ok().body(post);
     }
 
+    //get all users posts
+    @GetMapping("/posts/users/{id}")
+    public ResponseEntity<List<PostResponse>> getUsersPost(@PathVariable(value = "id") long userId) throws ResourceNotFoundException{
+        AppUser appUser = appUserService.getAbledAppUser(userId);
+        List<Post> userPosts = postsService.filterAbled(appUser.getPosts());
+        postsService.sortPostByDate(userPosts);
+        List<PostResponse> postsResponse = postsService.getPostResponseLoggedIn(userPosts, appUser);
+        return ResponseEntity.ok().body(postsResponse);
+    }
+
     //save post
     @PostMapping("/posts")
-    public ResponseEntity<Post> createPost(@Valid @RequestBody PostFormData postFormData) {
-        Post createdPost = postsService.createPost(postFormData);
+    public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostFormData postFormData) {
         AppUser appUser = appUserService.getAuthenticatedAppUser();
+        Post createdPost = postsService.createPost(postFormData, appUser);
         Post addedPost = appUserService.addPost(appUser, createdPost);
-        return ResponseEntity.ok().body(addedPost);
+        PostResponse postResponse = new PostResponse(addedPost, VoteStatus.UNVOTED);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     //update post
     @PutMapping("/posts/{id}")
-    public ResponseEntity<Post> updatePost(@PathVariable(name = "id") long postId, @Valid @RequestBody PostFormData postFormData) throws ResourceNotFoundException
+    public ResponseEntity<PostResponse> updatePost(@PathVariable(name = "id") long postId, @Valid @RequestBody PostFormData postFormData) throws ResourceNotFoundException
     {
         AppUser appUser = appUserService.getAuthenticatedAppUser();
-        Post ownedPost = appUserService.getAuthenticatedUserPosts(appUser, postId);
+        Post activePost = postsService.getActivePostById(postId);
+        Post ownedPost = appUserService.checkOwnedPost(appUser, activePost);
         Post newPost = postsService.updatePost(ownedPost, postFormData);
-        return ResponseEntity.ok().body(newPost);
+        PostResponse postResponse = postsService.getPostResponse(newPost, appUser);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     //delete post
     @DeleteMapping("/posts/{id}")
     public ResponseEntity<Post> deletePost(@PathVariable(name = "id") long postId) throws ResourceNotFoundException
     {
+        Post activePost = postsService.getActivePostById(postId);
         AppUser appUser = appUserService.getAuthenticatedAppUser();
-        Post ownedPost = appUserService.getAuthenticatedUserPosts(appUser, postId);
+        Post ownedPost = appUserService.checkOwnedPost(appUser, activePost);
         Post disabledPost = postsService.disablePost(ownedPost);
         return ResponseEntity.ok().body(disabledPost);
     }
 
     //upvote post
     @PutMapping("/posts/{id}/upvote")
-    public ResponseEntity<Post> upvotePost(@PathVariable(name="id") long postId) throws ResourceNotFoundException, BadRequestException {
+    public ResponseEntity<PostResponse> upvotePost(@PathVariable(name="id") long postId) throws ResourceNotFoundException, BadRequestException {
         Post post = postsService.getActivePostById(postId);
         AppUser appUser = appUserService.getAuthenticatedAppUser();
         Post upvotedPost = postsService.upvote(post, appUser);
-        return ResponseEntity.ok().body(upvotedPost);
+        PostResponse postResponse = new PostResponse(upvotedPost, VoteStatus.UPVOTED);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     //downvote post
     @PutMapping("/posts/{id}/downvote")
-    public ResponseEntity<Post> downvotePost(@PathVariable(name="id") long postId) throws ResourceNotFoundException, BadRequestException {
+    public ResponseEntity<PostResponse> downvotePost(@PathVariable(name="id") long postId) throws ResourceNotFoundException, BadRequestException {
         Post post = postsService.getActivePostById(postId);
         AppUser appUser = appUserService.getAuthenticatedAppUser();
         Post downvotedPost = postsService.downvote(post, appUser);
-        return ResponseEntity.ok().body(downvotedPost);
+        PostResponse postResponse = new PostResponse(downvotedPost, VoteStatus.DOWNVOTED);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     //unvote post
     @PutMapping("/posts/{id}/unvote")
-    public ResponseEntity<Post> unvotePost(@PathVariable(name = "id") long postId) throws ResourceNotFoundException {
+    public ResponseEntity<PostResponse> unvotePost(@PathVariable(name = "id") long postId) throws ResourceNotFoundException {
         Post post = postsService.getActivePostById(postId);
         AppUser appUser = appUserService.getAuthenticatedAppUser();
         Post unvotedPost = postsService.unvote(post, appUser);
-        return ResponseEntity.ok().body(unvotedPost);
+        PostResponse postResponse = new PostResponse(unvotedPost, VoteStatus.UNVOTED);
+        return ResponseEntity.ok().body(postResponse);
     }
 
 }
